@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const PORT = 3000;
+const SERVER_START_TIME = Date.now();
 
 // 保存先フォルダ（Codespaces対応: プロジェクト内の ./uploads/ に保存）
 const SAVE_DIR = path.join(__dirname, 'uploads');
@@ -47,6 +48,36 @@ const upload = multer({
 
 // 静的ファイル配信
 app.use(express.static(path.join(__dirname, 'public')));
+
+// サーバーステータスエンドポイント
+app.get('/status', (req, res) => {
+  let photoCount = 0;
+  try {
+    const files = fs.readdirSync(SAVE_DIR);
+    photoCount = files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f)).length;
+  } catch (e) {
+    // uploads ディレクトリが未作成の場合
+  }
+
+  const uptimeSeconds = Math.floor((Date.now() - SERVER_START_TIME) / 1000);
+  const hours = Math.floor(uptimeSeconds / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = uptimeSeconds % 60;
+
+  let uptimeDisplay = '';
+  if (hours > 0) uptimeDisplay += hours + '時間';
+  if (minutes > 0 || hours > 0) uptimeDisplay += minutes + '分';
+  uptimeDisplay += seconds + '秒';
+
+  res.json({
+    status: 'online',
+    uptime_seconds: uptimeSeconds,
+    uptime_display: uptimeDisplay,
+    photo_count: photoCount,
+    server_time: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
 
 // 写真アップロードエンドポイント
 app.post('/upload', upload.single('photo'), (req, res) => {
