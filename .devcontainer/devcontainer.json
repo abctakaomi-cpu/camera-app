@@ -1,0 +1,12 @@
+{
+  "name": "Camera App",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Camera App",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install"
+}
