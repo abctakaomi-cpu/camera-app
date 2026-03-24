@@ -1,24 +1,7 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { useBuildings } from '../hooks/useBuildings'
 
 function BuildingNameSelect({ value, onChange }) {
-  const [buildings, setBuildings] = useState([])
-
-  useEffect(() => {
-    const fetchBuildings = async () => {
-      const { data } = await supabase
-        .from('projects')
-        .select('area')
-        .not('area', 'is', null)
-        .order('area')
-
-      if (data) {
-        const unique = [...new Set(data.map((d) => d.area).filter(Boolean))]
-        setBuildings(unique)
-      }
-    }
-    fetchBuildings()
-  }, [])
+  const buildings = useBuildings()
 
   return (
     <div className="building-select">

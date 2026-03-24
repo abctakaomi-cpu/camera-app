@@ -1,85 +1,41 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '../components/Header'
 import BuildingNameSelect from '../components/BuildingNameSelect'
-import { useGeolocation } from '../hooks/useGeolocation'
+import PoleFilterInputs from '../components/PoleFilterInputs'
 import { useCompass } from '../hooks/useCompass'
+import { usePhotoCapture } from '../hooks/usePhotoCapture'
+import { useSuggestions } from '../hooks/useSuggestions'
 import { uploadPhoto } from '../lib/uploadPhoto'
 import { supabase } from '../lib/supabase'
 
 function CapturePhotoPage({ session }) {
   const [buildingName, setBuildingName] = useState('')
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [gps, setGps] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [status, setStatus] = useState('')
-  const [error, setError] = useState('')
-  const [gpsBlocked, setGpsBlocked] = useState(false)
   const [poleLineName, setPoleLineName] = useState('')
   const [poleNumber, setPoleNumber] = useState('')
   const [constructionNumber, setConstructionNumber] = useState('')
   const [comment, setComment] = useState('')
-  const fileInputRef = useRef(null)
-  const galleryInputRef = useRef(null)
-
+  const [uploading, setUploading] = useState(false)
+  const [status, setStatus] = useState('')
   const [allPhotos, setAllPhotos] = useState([])
 
-  const { getPosition } = useGeolocation()
   const { compassDirection } = useCompass()
+  const {
+    file, preview, gps, gpsBlocked, error, setError,
+    fileInputRef, galleryInputRef,
+    handleFileChange, retryGps, reset,
+  } = usePhotoCapture()
+
+  const suggestions = useSuggestions(allPhotos, { poleLineName, poleNumber, constructionNumber })
 
   useEffect(() => {
     const fetchSuggestions = async () => {
       const { data } = await supabase
         .from('photos')
         .select('pole_line_name, pole_number, construction_number')
-
       if (data) setAllPhotos(data)
     }
     fetchSuggestions()
   }, [])
-
-  const suggestions = useMemo(() => {
-    const forPoleLine = allPhotos.filter((p) => {
-      if (poleNumber && !p.pole_number?.includes(poleNumber)) return false
-      if (constructionNumber && !p.construction_number?.includes(constructionNumber)) return false
-      return true
-    })
-    const forPoleNumber = allPhotos.filter((p) => {
-      if (poleLineName && !p.pole_line_name?.includes(poleLineName)) return false
-      if (constructionNumber && !p.construction_number?.includes(constructionNumber)) return false
-      return true
-    })
-    const forConstruction = allPhotos.filter((p) => {
-      if (poleLineName && !p.pole_line_name?.includes(poleLineName)) return false
-      if (poleNumber && !p.pole_number?.includes(poleNumber)) return false
-      return true
-    })
-
-    return {
-      poleLineNames: [...new Set(forPoleLine.map((p) => p.pole_line_name).filter(Boolean))].sort(),
-      poleNumbers: [...new Set(forPoleNumber.map((p) => p.pole_number).filter(Boolean))].sort(),
-      constructionNumbers: [...new Set(forConstruction.map((p) => p.construction_number).filter(Boolean))].sort(),
-    }
-  }, [allPhotos, poleLineName, poleNumber, constructionNumber])
-
-  const handleFileChange = async (e) => {
-    const selected = e.target.files?.[0]
-    if (!selected) return
-
-    setFile(selected)
-    setPreview(URL.createObjectURL(selected))
-    setError('')
-    setStatus('')
-
-    try {
-      const position = await getPosition()
-      setGps(position)
-    } catch (err) {
-      setGps(null)
-      setError(err.message)
-      setGpsBlocked(err.message.includes('許可されていません'))
-    }
-  }
 
   const handleUpload = async () => {
     if (!file || !buildingName) return
@@ -103,15 +59,11 @@ function CapturePhotoPage({ session }) {
       })
 
       setStatus('アップロード完了')
-      setFile(null)
-      setPreview(null)
-      setGps(null)
+      reset()
       setPoleLineName('')
       setPoleNumber('')
       setConstructionNumber('')
       setComment('')
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      if (galleryInputRef.current) galleryInputRef.current.value = ''
     } catch (err) {
       setError(err.message)
     } finally {
@@ -127,47 +79,15 @@ function CapturePhotoPage({ session }) {
         <BuildingNameSelect value={buildingName} onChange={setBuildingName} />
 
         <div className="capture-fields">
-          <div className="capture-field">
-            <label>電柱番号</label>
-            <div className="pole-inputs">
-              <input
-                id="pole-line-name"
-                type="text"
-                list="pole-line-names"
-                value={poleLineName}
-                onChange={(e) => setPoleLineName(e.target.value)}
-                placeholder="幹線名"
-              />
-              <datalist id="pole-line-names">
-                {suggestions.poleLineNames.map((v) => <option key={v} value={v} />)}
-              </datalist>
-              <input
-                id="pole-number"
-                type="text"
-                list="pole-numbers"
-                value={poleNumber}
-                onChange={(e) => setPoleNumber(e.target.value)}
-                placeholder="番号"
-              />
-              <datalist id="pole-numbers">
-                {suggestions.poleNumbers.map((v) => <option key={v} value={v} />)}
-              </datalist>
-            </div>
-          </div>
-          <div className="capture-field">
-            <label htmlFor="construction-number">工事番号</label>
-            <input
-              id="construction-number"
-              type="text"
-              list="construction-numbers"
-              value={constructionNumber}
-              onChange={(e) => setConstructionNumber(e.target.value)}
-              placeholder="工事番号を入力"
-            />
-            <datalist id="construction-numbers">
-              {suggestions.constructionNumbers.map((v) => <option key={v} value={v} />)}
-            </datalist>
-          </div>
+          <PoleFilterInputs
+            poleLineName={poleLineName}
+            onPoleLineNameChange={setPoleLineName}
+            poleNumber={poleNumber}
+            onPoleNumberChange={setPoleNumber}
+            constructionNumber={constructionNumber}
+            onConstructionNumberChange={setConstructionNumber}
+            suggestions={suggestions}
+          />
           <div className="capture-field">
             <label htmlFor="comment">コメント</label>
             <textarea
@@ -235,20 +155,7 @@ function CapturePhotoPage({ session }) {
               <li>「位置情報」を「許可」に変更</li>
               <li>ページを再読み込み</li>
             </ol>
-            <button
-              className="retry-gps-btn"
-              onClick={async () => {
-                setError('')
-                setGpsBlocked(false)
-                try {
-                  const position = await getPosition()
-                  setGps(position)
-                } catch (err) {
-                  setError(err.message)
-                  setGpsBlocked(err.message.includes('許可されていません'))
-                }
-              }}
-            >
+            <button className="retry-gps-btn" onClick={retryGps}>
               位置情報を再取得
             </button>
           </div>
