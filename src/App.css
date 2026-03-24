@@ -117,6 +117,44 @@ button[type="submit"]:disabled {
   font-size: 0.9rem;
 }
 
+.gps-help {
+  background: #fff3e0;
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: #e65100;
+}
+
+.gps-help p {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.gps-help ol {
+  margin: 0 0 12px 20px;
+}
+
+.gps-help ol li {
+  margin-bottom: 4px;
+}
+
+.retry-gps-btn {
+  width: 100%;
+  padding: 10px;
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.retry-gps-btn:active {
+  background: #f57c00;
+}
+
 .container > button {
   margin-top: 20px;
   padding: 10px 20px;

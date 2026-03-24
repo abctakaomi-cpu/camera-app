@@ -13,6 +13,7 @@ function CapturePhotoPage({ session }) {
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const [gpsBlocked, setGpsBlocked] = useState(false)
   const fileInputRef = useRef(null)
 
   const { getPosition } = useGeolocation()
@@ -33,6 +34,7 @@ function CapturePhotoPage({ session }) {
     } catch (err) {
       setGps(null)
       setError(err.message)
+      setGpsBlocked(err.message.includes('許可されていません'))
     }
   }
 
@@ -105,6 +107,32 @@ function CapturePhotoPage({ session }) {
         )}
 
         {error && <div className="error">{error}</div>}
+        {gpsBlocked && (
+          <div className="gps-help">
+            <p>位置情報がブロックされています。以下の手順で許可してください：</p>
+            <ol>
+              <li>ブラウザのアドレスバー左の鍵アイコンをタップ</li>
+              <li>「位置情報」を「許可」に変更</li>
+              <li>ページを再読み込み</li>
+            </ol>
+            <button
+              className="retry-gps-btn"
+              onClick={async () => {
+                setError('')
+                setGpsBlocked(false)
+                try {
+                  const position = await getPosition()
+                  setGps(position)
+                } catch (err) {
+                  setError(err.message)
+                  setGpsBlocked(err.message.includes('許可されていません'))
+                }
+              }}
+            >
+              位置情報を再取得
+            </button>
+          </div>
+        )}
         {status && <div className="message">{status}</div>}
 
         <button
