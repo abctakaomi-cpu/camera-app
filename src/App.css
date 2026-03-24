@@ -622,8 +622,26 @@ button[type="submit"]:disabled {
   gap: 2px;
 }
 
+.map-popup-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .map-popup-info strong {
   color: #1a73e8;
+}
+
+.streetview-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.streetview-link:active {
+  background: #eee;
 }
 
 .map-popup-info span {

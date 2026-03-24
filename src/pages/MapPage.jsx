@@ -110,10 +110,16 @@ function MapPage() {
 
       const popupContent = document.createElement('div')
       popupContent.className = 'map-popup'
+      const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${photo.latitude},${photo.longitude}`
       popupContent.innerHTML = `
         <div class="map-popup-loading">読み込み中...</div>
         <div class="map-popup-info">
-          ${photo.projects?.area ? `<strong>${photo.projects.area}</strong>` : ''}
+          <div class="map-popup-title">
+            ${photo.projects?.area ? `<strong>${photo.projects.area}</strong>` : ''}
+            <a href="${streetViewUrl}" target="_blank" rel="noopener" class="streetview-link" title="Googleストリートビューで開く">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#EA4335"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </a>
+          </div>
           <span>${formatDate(photo.taken_at || photo.created_at)}</span>
           ${photo.pole_line_name || photo.pole_number ? `<span>電柱: ${[photo.pole_line_name, photo.pole_number].filter(Boolean).join(' ')}</span>` : ''}
         </div>
