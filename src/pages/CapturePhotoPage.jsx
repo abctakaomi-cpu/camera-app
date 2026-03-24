@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Header from '../components/Header'
 import BuildingNameSelect from '../components/BuildingNameSelect'
 import { useGeolocation } from '../hooks/useGeolocation'
@@ -22,7 +22,7 @@ function CapturePhotoPage({ session }) {
   const fileInputRef = useRef(null)
   const galleryInputRef = useRef(null)
 
-  const [suggestions, setSuggestions] = useState({ poleLineNames: [], poleNumbers: [], constructionNumbers: [] })
+  const [allPhotos, setAllPhotos] = useState([])
 
   const { getPosition } = useGeolocation()
   const { compassDirection } = useCompass()
@@ -33,16 +33,34 @@ function CapturePhotoPage({ session }) {
         .from('photos')
         .select('pole_line_name, pole_number, construction_number')
 
-      if (data) {
-        setSuggestions({
-          poleLineNames: [...new Set(data.map((d) => d.pole_line_name).filter(Boolean))].sort(),
-          poleNumbers: [...new Set(data.map((d) => d.pole_number).filter(Boolean))].sort(),
-          constructionNumbers: [...new Set(data.map((d) => d.construction_number).filter(Boolean))].sort(),
-        })
-      }
+      if (data) setAllPhotos(data)
     }
     fetchSuggestions()
   }, [])
+
+  const suggestions = useMemo(() => {
+    const forPoleLine = allPhotos.filter((p) => {
+      if (poleNumber && !p.pole_number?.includes(poleNumber)) return false
+      if (constructionNumber && !p.construction_number?.includes(constructionNumber)) return false
+      return true
+    })
+    const forPoleNumber = allPhotos.filter((p) => {
+      if (poleLineName && !p.pole_line_name?.includes(poleLineName)) return false
+      if (constructionNumber && !p.construction_number?.includes(constructionNumber)) return false
+      return true
+    })
+    const forConstruction = allPhotos.filter((p) => {
+      if (poleLineName && !p.pole_line_name?.includes(poleLineName)) return false
+      if (poleNumber && !p.pole_number?.includes(poleNumber)) return false
+      return true
+    })
+
+    return {
+      poleLineNames: [...new Set(forPoleLine.map((p) => p.pole_line_name).filter(Boolean))].sort(),
+      poleNumbers: [...new Set(forPoleNumber.map((p) => p.pole_number).filter(Boolean))].sort(),
+      constructionNumbers: [...new Set(forConstruction.map((p) => p.construction_number).filter(Boolean))].sort(),
+    }
+  }, [allPhotos, poleLineName, poleNumber, constructionNumber])
 
   const handleFileChange = async (e) => {
     const selected = e.target.files?.[0]
