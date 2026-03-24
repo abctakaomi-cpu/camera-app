@@ -7,16 +7,15 @@ import { supabase } from '../lib/supabase'
 
 function PhotoListPage() {
   const [buildingFilter, setBuildingFilter] = useState('')
-  const [poleFilter, setPoleFilter] = useState('')
+  const [poleLineFilter, setPoleLineFilter] = useState('')
+  const [poleNumberFilter, setPoleNumberFilter] = useState('')
   const [constructionFilter, setConstructionFilter] = useState('')
   const [buildings, setBuildings] = useState([])
   const { photos, loading, error } = useRealtimePhotos(buildingFilter || null)
 
   const filteredPhotos = photos.filter((p) => {
-    if (poleFilter) {
-      const poleText = [p.pole_line_name, p.pole_number].filter(Boolean).join(' ')
-      if (!poleText.includes(poleFilter)) return false
-    }
+    if (poleLineFilter && !p.pole_line_name?.includes(poleLineFilter)) return false
+    if (poleNumberFilter && !p.pole_number?.includes(poleNumberFilter)) return false
     if (constructionFilter && !p.construction_number?.includes(constructionFilter)) return false
     return true
   })
@@ -59,14 +58,23 @@ function PhotoListPage() {
             </select>
           </div>
           <div className="photolist-filter">
-            <label htmlFor="filter-pole">電柱番号</label>
-            <input
-              id="filter-pole"
-              type="text"
-              value={poleFilter}
-              onChange={(e) => setPoleFilter(e.target.value)}
-              placeholder="電柱番号で絞り込み"
-            />
+            <label>電柱番号</label>
+            <div className="pole-inputs">
+              <input
+                id="filter-pole-line"
+                type="text"
+                value={poleLineFilter}
+                onChange={(e) => setPoleLineFilter(e.target.value)}
+                placeholder="幹線名"
+              />
+              <input
+                id="filter-pole-number"
+                type="text"
+                value={poleNumberFilter}
+                onChange={(e) => setPoleNumberFilter(e.target.value)}
+                placeholder="番号"
+              />
+            </div>
           </div>
           <div className="photolist-filter">
             <label htmlFor="filter-construction">工事番号</label>
