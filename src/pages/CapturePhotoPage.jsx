@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Header from '../components/Header'
 import BuildingNameSelect from '../components/BuildingNameSelect'
 import { useGeolocation } from '../hooks/useGeolocation'
 import { useCompass } from '../hooks/useCompass'
 import { uploadPhoto } from '../lib/uploadPhoto'
+import { supabase } from '../lib/supabase'
 
 function CapturePhotoPage({ session }) {
   const [buildingName, setBuildingName] = useState('')
@@ -21,8 +22,27 @@ function CapturePhotoPage({ session }) {
   const fileInputRef = useRef(null)
   const galleryInputRef = useRef(null)
 
+  const [suggestions, setSuggestions] = useState({ poleLineNames: [], poleNumbers: [], constructionNumbers: [] })
+
   const { getPosition } = useGeolocation()
   const { compassDirection } = useCompass()
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      const { data } = await supabase
+        .from('photos')
+        .select('pole_line_name, pole_number, construction_number')
+
+      if (data) {
+        setSuggestions({
+          poleLineNames: [...new Set(data.map((d) => d.pole_line_name).filter(Boolean))].sort(),
+          poleNumbers: [...new Set(data.map((d) => d.pole_number).filter(Boolean))].sort(),
+          constructionNumbers: [...new Set(data.map((d) => d.construction_number).filter(Boolean))].sort(),
+        })
+      }
+    }
+    fetchSuggestions()
+  }, [])
 
   const handleFileChange = async (e) => {
     const selected = e.target.files?.[0]
@@ -95,17 +115,25 @@ function CapturePhotoPage({ session }) {
               <input
                 id="pole-line-name"
                 type="text"
+                list="pole-line-names"
                 value={poleLineName}
                 onChange={(e) => setPoleLineName(e.target.value)}
                 placeholder="幹線名"
               />
+              <datalist id="pole-line-names">
+                {suggestions.poleLineNames.map((v) => <option key={v} value={v} />)}
+              </datalist>
               <input
                 id="pole-number"
                 type="text"
+                list="pole-numbers"
                 value={poleNumber}
                 onChange={(e) => setPoleNumber(e.target.value)}
                 placeholder="番号"
               />
+              <datalist id="pole-numbers">
+                {suggestions.poleNumbers.map((v) => <option key={v} value={v} />)}
+              </datalist>
             </div>
           </div>
           <div className="capture-field">
@@ -113,10 +141,14 @@ function CapturePhotoPage({ session }) {
             <input
               id="construction-number"
               type="text"
+              list="construction-numbers"
               value={constructionNumber}
               onChange={(e) => setConstructionNumber(e.target.value)}
               placeholder="工事番号を入力"
             />
+            <datalist id="construction-numbers">
+              {suggestions.constructionNumbers.map((v) => <option key={v} value={v} />)}
+            </datalist>
           </div>
           <div className="capture-field">
             <label htmlFor="comment">コメント</label>
