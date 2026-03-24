@@ -17,6 +17,7 @@ function CapturePhotoPage({ session }) {
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState('')
   const [allPhotos, setAllPhotos] = useState([])
+  const [lastData, setLastData] = useState(null)
 
   const isIosChrome = /CriOS/.test(navigator.userAgent)
   const { compassDirection } = useCompass()
@@ -59,8 +60,10 @@ function CapturePhotoPage({ session }) {
         comment,
       })
 
+      setLastData({ buildingName, poleLineName, poleNumber, constructionNumber })
       setStatus('アップロード完了')
       reset()
+      setBuildingName('')
       setPoleLineName('')
       setPoleNumber('')
       setConstructionNumber('')
@@ -81,6 +84,20 @@ function CapturePhotoPage({ session }) {
           <div className="ios-chrome-warning">
             iPhoneのChromeではGPS位置情報が正常に取得できません。<strong>Safariでのご利用を推奨します。</strong>
           </div>
+        )}
+
+        {lastData && (
+          <button
+            className="reuse-btn"
+            onClick={() => {
+              setBuildingName(lastData.buildingName)
+              setPoleLineName(lastData.poleLineName)
+              setPoleNumber(lastData.poleNumber)
+              setConstructionNumber(lastData.constructionNumber)
+            }}
+          >
+            前回のデータを再利用
+          </button>
         )}
 
         <BuildingNameSelect value={buildingName} onChange={setBuildingName} />

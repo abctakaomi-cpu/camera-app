@@ -155,6 +155,23 @@ button[type="submit"]:disabled {
   background: #f57c00;
 }
 
+.reuse-btn {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #1a73e8;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.reuse-btn:active {
+  background: #d2e3fc;
+}
+
 .ios-chrome-warning {
   background: #fff3e0;
   border: 1px solid #ffb74d;
