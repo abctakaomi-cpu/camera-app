@@ -303,10 +303,64 @@ function MapPage({ session }) {
         }
       })
 
-      const marker = new maplibregl.Marker({ color: '#FF9800' })
+      const DRAG_OFFSET_PX = 60
+
+      const marker = new maplibregl.Marker({ color: '#FF9800', draggable: true })
         .setLngLat([pin.longitude, pin.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
+
+      let ghostMarker = null
+      const originalLngLat = [pin.longitude, pin.latitude]
+
+      marker.on('dragstart', () => {
+        ghostMarker = new maplibregl.Marker({ color: '#FF9800' })
+          .setLngLat(originalLngLat)
+          .addTo(mapRef.current)
+        ghostMarker.getElement().style.opacity = '0.5'
+
+        const el = marker.getElement()
+        el.style.transform = el.style.transform + ' translateY(-60px)'
+      })
+
+      marker.on('drag', () => {
+        const el = marker.getElement()
+        if (!el.style.transform.includes('translateY(-60px)')) {
+          el.style.transform = el.style.transform + ' translateY(-60px)'
+        }
+      })
+
+      marker.on('dragend', async () => {
+        const el = marker.getElement()
+        el.style.transform = el.style.transform.replace(' translateY(-60px)', '')
+
+        const fingerLngLat = marker.getLngLat()
+        const fingerPixel = mapRef.current.project(fingerLngLat)
+        const correctedPixel = { x: fingerPixel.x, y: fingerPixel.y - DRAG_OFFSET_PX }
+        const correctedLngLat = mapRef.current.unproject(correctedPixel)
+
+        marker.setLngLat(correctedLngLat)
+
+        if (ghostMarker) {
+          ghostMarker.remove()
+          ghostMarker = null
+        }
+
+        const { error: updateError } = await supabase
+          .from('planned_pins')
+          .update({ latitude: correctedLngLat.lat, longitude: correctedLngLat.lng })
+          .eq('id', pin.id)
+
+        if (updateError) {
+          marker.setLngLat(originalLngLat)
+          alert('座標の更新に失敗しました')
+        } else {
+          originalLngLat[0] = correctedLngLat.lng
+          originalLngLat[1] = correctedLngLat.lat
+          pin.latitude = correctedLngLat.lat
+          pin.longitude = correctedLngLat.lng
+        }
+      })
 
       plannedMarkersRef.current.push(marker)
     })

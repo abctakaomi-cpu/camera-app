@@ -67,16 +67,20 @@ function CapturePhotoPage({ session }) {
     setStatus('')
 
     try {
-      // URLパラメータの座標をフォールバックとして使用
+      // ピンからの遷移の場合、ピン座標を優先
+      const pinId = searchParams.get('pinId')
       const paramLat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : null
       const paramLng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : null
+
+      const useLat = pinId ? (paramLat || gps?.latitude || null) : (gps?.latitude || paramLat || null)
+      const useLng = pinId ? (paramLng || gps?.longitude || null) : (gps?.longitude || paramLng || null)
 
       await uploadPhoto({
         file,
         buildingName,
         userId: session.user.id,
-        latitude: gps?.latitude || paramLat || null,
-        longitude: gps?.longitude || paramLng || null,
+        latitude: useLat,
+        longitude: useLng,
         compassDirection: compassDirection || null,
         poleLineName,
         poleNumber,
@@ -85,7 +89,6 @@ function CapturePhotoPage({ session }) {
       })
 
       // 計画ピンからの撮影の場合、ピンを削除
-      const pinId = searchParams.get('pinId')
       if (pinId) {
         await supabase.from('planned_pins').delete().eq('id', pinId)
       }
