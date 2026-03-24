@@ -135,24 +135,65 @@ function MapPage() {
           })
       })
 
-      const marker = new maplibregl.Marker({ draggable: true })
+      const DRAG_OFFSET_PX = 60
+
+      const markerEl = document.createElement('div')
+      markerEl.className = 'custom-marker'
+      markerEl.innerHTML = '<div class="marker-pin"></div>'
+
+      const marker = new maplibregl.Marker({ element: markerEl, draggable: true, anchor: 'bottom' })
         .setLngLat([photo.longitude, photo.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
 
+      let ghostMarker = null
+      const originalLngLat = [photo.longitude, photo.latitude]
+
+      marker.on('dragstart', () => {
+        // ゴーストマーカーを元の位置に表示
+        const ghostEl = document.createElement('div')
+        ghostEl.className = 'custom-marker ghost-marker'
+        ghostEl.innerHTML = '<div class="marker-pin"></div>'
+        ghostMarker = new maplibregl.Marker({ element: ghostEl, anchor: 'bottom' })
+          .setLngLat(originalLngLat)
+          .addTo(mapRef.current)
+
+        // ドラッグ中のピンを赤色+上方オフセット
+        markerEl.classList.add('dragging')
+      })
+
       marker.on('dragend', async () => {
-        const lngLat = marker.getLngLat()
+        markerEl.classList.remove('dragging')
+
+        // 指の位置から上方オフセット分を補正して、ピンの見た目位置の座標を算出
+        const fingerLngLat = marker.getLngLat()
+        const fingerPixel = mapRef.current.project(fingerLngLat)
+        const correctedPixel = { x: fingerPixel.x, y: fingerPixel.y - DRAG_OFFSET_PX }
+        const correctedLngLat = mapRef.current.unproject(correctedPixel)
+
+        // 補正座標にマーカーを設定
+        marker.setLngLat(correctedLngLat)
+
+        // ゴースト削除
+        if (ghostMarker) {
+          ghostMarker.remove()
+          ghostMarker = null
+        }
+
+        // DB更新
         const { error: updateError } = await supabase
           .from('photos')
-          .update({ latitude: lngLat.lat, longitude: lngLat.lng })
+          .update({ latitude: correctedLngLat.lat, longitude: correctedLngLat.lng })
           .eq('id', photo.id)
 
         if (updateError) {
-          marker.setLngLat([photo.longitude, photo.latitude])
+          marker.setLngLat(originalLngLat)
           alert('座標の更新に失敗しました')
         } else {
-          photo.latitude = lngLat.lat
-          photo.longitude = lngLat.lng
+          originalLngLat[0] = correctedLngLat.lng
+          originalLngLat[1] = correctedLngLat.lat
+          photo.latitude = correctedLngLat.lat
+          photo.longitude = correctedLngLat.lng
         }
       })
 
