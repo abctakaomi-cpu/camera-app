@@ -20,7 +20,7 @@ function CapturePhotoPage({ session }) {
 
   const { compassDirection } = useCompass()
   const {
-    file, preview, gps, gpsBlocked, error, setError,
+    file, preview, gps, gpsBlocked, error, setError, gpsDebug,
     fileInputRef, galleryInputRef,
     handleFileChange, retryGps, reset,
   } = usePhotoCapture()
@@ -161,6 +161,10 @@ function CapturePhotoPage({ session }) {
           </div>
         )}
         {status && <div className="message">{status}</div>}
+
+        <div style={{ background: '#e3f2fd', padding: '8px 12px', borderRadius: '4px', fontSize: '0.8rem', color: '#1565c0', marginBottom: '12px' }}>
+          {gpsDebug}
+        </div>
 
         <button
           className="upload-btn"
