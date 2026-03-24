@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Header from '../components/Header'
 import PhotoCard from '../components/PhotoCard'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
@@ -11,7 +11,6 @@ function PhotoListPage() {
   const [poleNumberFilter, setPoleNumberFilter] = useState('')
   const [constructionFilter, setConstructionFilter] = useState('')
   const [buildings, setBuildings] = useState([])
-  const [suggestions, setSuggestions] = useState({ poleLineNames: [], poleNumbers: [], constructionNumbers: [] })
   const { photos, loading, error } = useRealtimePhotos(buildingFilter || null)
 
   const filteredPhotos = photos.filter((p) => {
@@ -21,8 +20,33 @@ function PhotoListPage() {
     return true
   })
 
+  // 各フィルタの候補を、他のフィルタ条件に基づいて動的に算出
+  const suggestions = useMemo(() => {
+    const forPoleLine = photos.filter((p) => {
+      if (poleNumberFilter && !p.pole_number?.includes(poleNumberFilter)) return false
+      if (constructionFilter && !p.construction_number?.includes(constructionFilter)) return false
+      return true
+    })
+    const forPoleNumber = photos.filter((p) => {
+      if (poleLineFilter && !p.pole_line_name?.includes(poleLineFilter)) return false
+      if (constructionFilter && !p.construction_number?.includes(constructionFilter)) return false
+      return true
+    })
+    const forConstruction = photos.filter((p) => {
+      if (poleLineFilter && !p.pole_line_name?.includes(poleLineFilter)) return false
+      if (poleNumberFilter && !p.pole_number?.includes(poleNumberFilter)) return false
+      return true
+    })
+
+    return {
+      poleLineNames: [...new Set(forPoleLine.map((p) => p.pole_line_name).filter(Boolean))].sort(),
+      poleNumbers: [...new Set(forPoleNumber.map((p) => p.pole_number).filter(Boolean))].sort(),
+      constructionNumbers: [...new Set(forConstruction.map((p) => p.construction_number).filter(Boolean))].sort(),
+    }
+  }, [photos, poleLineFilter, poleNumberFilter, constructionFilter])
+
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBuildings = async () => {
       const { data: projects } = await supabase
         .from('projects')
         .select('area')
@@ -32,20 +56,8 @@ function PhotoListPage() {
       if (projects) {
         setBuildings([...new Set(projects.map((d) => d.area).filter(Boolean))])
       }
-
-      const { data: photoData } = await supabase
-        .from('photos')
-        .select('pole_line_name, pole_number, construction_number')
-
-      if (photoData) {
-        setSuggestions({
-          poleLineNames: [...new Set(photoData.map((d) => d.pole_line_name).filter(Boolean))].sort(),
-          poleNumbers: [...new Set(photoData.map((d) => d.pole_number).filter(Boolean))].sort(),
-          constructionNumbers: [...new Set(photoData.map((d) => d.construction_number).filter(Boolean))].sort(),
-        })
-      }
     }
-    fetchData()
+    fetchBuildings()
   }, [])
 
   return (
