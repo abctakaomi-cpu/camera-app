@@ -30,14 +30,32 @@ function CapturePhotoPage({ session }) {
   const suggestions = useSuggestions(allPhotos, { poleLineName, poleNumber, constructionNumber })
 
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      const { data: photoData } = await supabase
         .from('photos')
         .select('pole_line_name, pole_number, construction_number')
-      if (data) setAllPhotos(data)
+      if (photoData) setAllPhotos(photoData)
+
+      // このユーザーの最後のアップロードデータを取得
+      const { data: lastPhoto } = await supabase
+        .from('photos')
+        .select('projects(area), pole_line_name, pole_number, construction_number')
+        .eq('uploaded_by', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (lastPhoto) {
+        setLastData({
+          buildingName: lastPhoto.projects?.area || '',
+          poleLineName: lastPhoto.pole_line_name || '',
+          poleNumber: lastPhoto.pole_number || '',
+          constructionNumber: lastPhoto.construction_number || '',
+        })
+      }
     }
-    fetchSuggestions()
-  }, [])
+    fetchData()
+  }, [session.user.id])
 
   const handleUpload = async () => {
     if (!file || !buildingName) return
@@ -60,7 +78,8 @@ function CapturePhotoPage({ session }) {
         comment,
       })
 
-      setLastData({ buildingName, poleLineName, poleNumber, constructionNumber })
+      const uploaded = { buildingName, poleLineName, poleNumber, constructionNumber }
+      setLastData(uploaded)
       setStatus('アップロード完了')
       reset()
       setBuildingName('')
