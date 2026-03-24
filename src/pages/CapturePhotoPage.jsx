@@ -69,13 +69,19 @@ function CapturePhotoPage({ session }) {
     setStatus('')
 
     try {
-      // ピンからの遷移の場合、ピン座標を優先
+      // ピンからの遷移の場合、常にピン座標を使用（EXIFやGPSより優先）
       const pinId = searchParams.get('pinId')
       const paramLat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : null
       const paramLng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : null
 
-      const useLat = pinId ? (paramLat || gps?.latitude || null) : (gps?.latitude || paramLat || null)
-      const useLng = pinId ? (paramLng || gps?.longitude || null) : (gps?.longitude || paramLng || null)
+      let useLat, useLng
+      if (pinId && paramLat != null && paramLng != null) {
+        useLat = paramLat
+        useLng = paramLng
+      } else {
+        useLat = gps?.latitude || null
+        useLng = gps?.longitude || null
+      }
 
       await uploadPhoto({
         file,
