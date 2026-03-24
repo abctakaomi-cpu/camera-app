@@ -31,7 +31,7 @@ export async function uploadPhoto({
   const randomId = Math.random().toString(36).substring(2, 8)
   const ext = file.name?.split('.').pop() || 'jpg'
   const fileName = `${timestamp}_${randomId}.${ext}`
-  const storagePath = `${buildingName}/${fileName}`
+  const storagePath = `${project.id}/${fileName}`
 
   const { error: uploadError } = await supabase.storage
     .from('photos')
