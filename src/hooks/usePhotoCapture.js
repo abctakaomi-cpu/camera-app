@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useGeolocation } from './useGeolocation'
 import { extractExifGps } from '../lib/extractExifGps'
 
@@ -10,8 +10,16 @@ export function usePhotoCapture() {
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const preloadedGps = useRef(null)
 
   const { getPosition } = useGeolocation()
+
+  // ページ読み込み時にGPSを先行取得（カメラ復帰後のフォールバック用）
+  useEffect(() => {
+    getPosition()
+      .then((pos) => { preloadedGps.current = pos })
+      .catch(() => { preloadedGps.current = null })
+  }, [getPosition])
 
   const handleFileChange = async (e) => {
     const selected = e.target.files?.[0]
@@ -21,6 +29,7 @@ export function usePhotoCapture() {
     setPreview(URL.createObjectURL(selected))
     setError('')
 
+    // 1. EXIFからGPS取得を試みる
     const exifGps = await extractExifGps(selected)
     if (exifGps) {
       setGps(exifGps)
@@ -28,15 +37,27 @@ export function usePhotoCapture() {
       return
     }
 
+    // 2. navigator.geolocationで取得を試みる
     try {
       const position = await getPosition()
       setGps(position)
       setGpsBlocked(false)
-    } catch (err) {
-      setGps(null)
-      setError(err.message)
-      setGpsBlocked(err.message.includes('許可されていません'))
+      return
+    } catch {
+      // geolocation失敗 → フォールバックへ
     }
+
+    // 3. 先行取得しておいたGPSをフォールバックとして使用
+    if (preloadedGps.current) {
+      setGps(preloadedGps.current)
+      setGpsBlocked(false)
+      return
+    }
+
+    // 全て失敗
+    setGps(null)
+    setError('位置情報を取得できませんでした。「位置情報を再取得」ボタンをお試しください。')
+    setGpsBlocked(true)
   }
 
   const retryGps = async () => {
