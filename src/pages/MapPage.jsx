@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import Header from '../components/Header'
@@ -57,13 +58,33 @@ const MAP_STYLES = {
   },
 }
 
-function MapPage() {
+function MapPage({ session }) {
+  const navigate = useNavigate()
   const mapContainer = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
+  const plannedMarkersRef = useRef([])
   const [mapStyle, setMapStyle] = useState('osm')
+  const [pinMode, setPinMode] = useState(false)
+  const [pendingLngLat, setPendingLngLat] = useState(null)
+  const [pinForm, setPinForm] = useState({ buildingName: '', poleLineName: '', poleNumber: '', constructionNumber: '' })
+  const [plannedPins, setPlannedPins] = useState([])
   const { photos, loading } = useRealtimePhotos(null)
 
+  // 計画ピンを取得
+  const fetchPlannedPins = useCallback(async () => {
+    const { data } = await supabase
+      .from('planned_pins')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setPlannedPins(data)
+  }, [])
+
+  useEffect(() => {
+    fetchPlannedPins()
+  }, [fetchPlannedPins])
+
+  // マップ初期化
   useEffect(() => {
     if (mapRef.current) return
 
@@ -84,6 +105,21 @@ function MapPage() {
     }
   }, [])
 
+  // ピン追加モードのクリックハンドラ
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    const handleClick = (e) => {
+      if (!pinMode) return
+      setPendingLngLat([e.lngLat.lng, e.lngLat.lat])
+    }
+
+    mapRef.current.on('click', handleClick)
+    return () => {
+      if (mapRef.current) mapRef.current.off('click', handleClick)
+    }
+  }, [pinMode])
+
   // マップスタイル切り替え
   useEffect(() => {
     if (!mapRef.current) return
@@ -96,10 +132,10 @@ function MapPage() {
     })
   }, [mapStyle])
 
+  // 写真マーカー表示
   useEffect(() => {
     if (!mapRef.current || loading) return
 
-    // 既存マーカーを削除
     markersRef.current.forEach((m) => m.remove())
     markersRef.current = []
 
@@ -152,19 +188,16 @@ function MapPage() {
       const originalLngLat = [photo.longitude, photo.latitude]
 
       marker.on('dragstart', () => {
-        // ゴーストマーカーを元の位置に50%透過で表示
         ghostMarker = new maplibregl.Marker({ color: '#1a73e8' })
           .setLngLat(originalLngLat)
           .addTo(mapRef.current)
         ghostMarker.getElement().style.opacity = '0.5'
 
-        // ドラッグ中のピンを上方オフセット
         const el = marker.getElement()
         el.style.transform = el.style.transform + ' translateY(-60px)'
       })
 
       marker.on('drag', () => {
-        // ドラッグ中も継続的にオフセットを維持
         const el = marker.getElement()
         if (!el.style.transform.includes('translateY(-60px)')) {
           el.style.transform = el.style.transform + ' translateY(-60px)'
@@ -172,26 +205,21 @@ function MapPage() {
       })
 
       marker.on('dragend', async () => {
-        // オフセット解除
         const el = marker.getElement()
         el.style.transform = el.style.transform.replace(' translateY(-60px)', '')
 
-        // 指の位置から上方オフセット分を補正して、ピンの見た目位置の座標を算出
         const fingerLngLat = marker.getLngLat()
         const fingerPixel = mapRef.current.project(fingerLngLat)
         const correctedPixel = { x: fingerPixel.x, y: fingerPixel.y - DRAG_OFFSET_PX }
         const correctedLngLat = mapRef.current.unproject(correctedPixel)
 
-        // 補正座標にマーカーを設定
         marker.setLngLat(correctedLngLat)
 
-        // ゴースト削除
         if (ghostMarker) {
           ghostMarker.remove()
           ghostMarker = null
         }
 
-        // DB更新
         const { error: updateError } = await supabase
           .from('photos')
           .update({ latitude: correctedLngLat.lat, longitude: correctedLngLat.lng })
@@ -211,8 +239,7 @@ function MapPage() {
       markersRef.current.push(marker)
     })
 
-    // 写真の位置にフィット
-    if (geoPhotos.length > 0) {
+    if (geoPhotos.length > 0 && plannedPins.length === 0) {
       const bounds = new maplibregl.LngLatBounds()
       geoPhotos.forEach((p) => bounds.extend([p.longitude, p.latitude]))
 
@@ -223,6 +250,87 @@ function MapPage() {
       }
     }
   }, [photos, loading])
+
+  // 計画ピン表示
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    plannedMarkersRef.current.forEach((m) => m.remove())
+    plannedMarkersRef.current = []
+
+    plannedPins.forEach((pin) => {
+      const popup = new maplibregl.Popup({ offset: 25, maxWidth: '220px' })
+
+      const popupContent = document.createElement('div')
+      popupContent.className = 'map-popup'
+      popupContent.innerHTML = `
+        <div class="map-popup-info">
+          ${pin.building_name ? `<strong>${pin.building_name}</strong>` : '<strong>未設定</strong>'}
+          ${pin.pole_line_name || pin.pole_number ? `<span>電柱: ${[pin.pole_line_name, pin.pole_number].filter(Boolean).join(' ')}</span>` : ''}
+          ${pin.construction_number ? `<span>工事: ${pin.construction_number}</span>` : ''}
+        </div>
+        <div class="map-popup-actions">
+          <button class="map-capture-btn">撮影</button>
+          <button class="map-delete-pin-btn">削除</button>
+        </div>
+      `
+
+      popup.setDOMContent(popupContent)
+
+      popup.on('open', () => {
+        const captureBtn = popupContent.querySelector('.map-capture-btn')
+        if (captureBtn) {
+          captureBtn.onclick = () => {
+            const params = new URLSearchParams({
+              lat: pin.latitude,
+              lng: pin.longitude,
+              ...(pin.building_name && { building: pin.building_name }),
+              ...(pin.pole_line_name && { poleLine: pin.pole_line_name }),
+              ...(pin.pole_number && { poleNum: pin.pole_number }),
+              ...(pin.construction_number && { construction: pin.construction_number }),
+              pinId: pin.id,
+            })
+            navigate(`/capture?${params.toString()}`)
+          }
+        }
+        const deleteBtn = popupContent.querySelector('.map-delete-pin-btn')
+        if (deleteBtn) {
+          deleteBtn.onclick = async () => {
+            if (!confirm('このピンを削除しますか？')) return
+            await supabase.from('planned_pins').delete().eq('id', pin.id)
+            fetchPlannedPins()
+          }
+        }
+      })
+
+      const marker = new maplibregl.Marker({ color: '#FF9800' })
+        .setLngLat([pin.longitude, pin.latitude])
+        .setPopup(popup)
+        .addTo(mapRef.current)
+
+      plannedMarkersRef.current.push(marker)
+    })
+  }, [plannedPins, navigate, fetchPlannedPins])
+
+  // ピン追加保存
+  const handleSavePin = async () => {
+    if (!pendingLngLat) return
+
+    await supabase.from('planned_pins').insert({
+      latitude: pendingLngLat[1],
+      longitude: pendingLngLat[0],
+      building_name: pinForm.buildingName || null,
+      pole_line_name: pinForm.poleLineName || null,
+      pole_number: pinForm.poleNumber || null,
+      construction_number: pinForm.constructionNumber || null,
+      created_by: session.user.id,
+    })
+
+    setPendingLngLat(null)
+    setPinForm({ buildingName: '', poleLineName: '', poleNumber: '', constructionNumber: '' })
+    setPinMode(false)
+    fetchPlannedPins()
+  }
 
   return (
     <div className="map-page">
@@ -239,6 +347,66 @@ function MapPage() {
         ))}
       </div>
       <div ref={mapContainer} className="map-container" />
+
+      {/* ピン追加ボタン */}
+      <button
+        className={`pin-add-btn ${pinMode ? 'active' : ''}`}
+        onClick={() => {
+          setPinMode(!pinMode)
+          setPendingLngLat(null)
+        }}
+      >
+        {pinMode ? 'キャンセル' : 'ピン追加'}
+      </button>
+
+      {/* ピン追加モードの案内 */}
+      {pinMode && !pendingLngLat && (
+        <div className="pin-mode-hint">地図をタップしてピンを配置</div>
+      )}
+
+      {/* ピン情報入力フォーム */}
+      {pendingLngLat && (
+        <div className="pin-form-overlay">
+          <div className="pin-form">
+            <h3>ピン情報を入力</h3>
+            <p className="pin-form-coords">
+              座標: {pendingLngLat[1].toFixed(5)}, {pendingLngLat[0].toFixed(5)}
+            </p>
+            <label>ビル名</label>
+            <input
+              type="text"
+              value={pinForm.buildingName}
+              onChange={(e) => setPinForm({ ...pinForm, buildingName: e.target.value })}
+              placeholder="ビル名"
+            />
+            <label>幹線名</label>
+            <input
+              type="text"
+              value={pinForm.poleLineName}
+              onChange={(e) => setPinForm({ ...pinForm, poleLineName: e.target.value })}
+              placeholder="幹線名"
+            />
+            <label>電柱番号</label>
+            <input
+              type="text"
+              value={pinForm.poleNumber}
+              onChange={(e) => setPinForm({ ...pinForm, poleNumber: e.target.value })}
+              placeholder="番号"
+            />
+            <label>工事番号</label>
+            <input
+              type="text"
+              value={pinForm.constructionNumber}
+              onChange={(e) => setPinForm({ ...pinForm, constructionNumber: e.target.value })}
+              placeholder="工事番号"
+            />
+            <div className="pin-form-buttons">
+              <button className="pin-form-save" onClick={handleSavePin}>保存</button>
+              <button className="pin-form-cancel" onClick={() => setPendingLngLat(null)}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

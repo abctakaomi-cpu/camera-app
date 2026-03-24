@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import BuildingNameSelect from '../components/BuildingNameSelect'
 import PoleFilterInputs from '../components/PoleFilterInputs'
@@ -9,10 +10,11 @@ import { uploadPhoto } from '../lib/uploadPhoto'
 import { supabase } from '../lib/supabase'
 
 function CapturePhotoPage({ session }) {
-  const [buildingName, setBuildingName] = useState('')
-  const [poleLineName, setPoleLineName] = useState('')
-  const [poleNumber, setPoleNumber] = useState('')
-  const [constructionNumber, setConstructionNumber] = useState('')
+  const [searchParams] = useSearchParams()
+  const [buildingName, setBuildingName] = useState(searchParams.get('building') || '')
+  const [poleLineName, setPoleLineName] = useState(searchParams.get('poleLine') || '')
+  const [poleNumber, setPoleNumber] = useState(searchParams.get('poleNum') || '')
+  const [constructionNumber, setConstructionNumber] = useState(searchParams.get('construction') || '')
   const [comment, setComment] = useState('')
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState('')
@@ -65,18 +67,28 @@ function CapturePhotoPage({ session }) {
     setStatus('')
 
     try {
+      // URLパラメータの座標をフォールバックとして使用
+      const paramLat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : null
+      const paramLng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : null
+
       await uploadPhoto({
         file,
         buildingName,
         userId: session.user.id,
-        latitude: gps?.latitude || null,
-        longitude: gps?.longitude || null,
+        latitude: gps?.latitude || paramLat || null,
+        longitude: gps?.longitude || paramLng || null,
         compassDirection: compassDirection || null,
         poleLineName,
         poleNumber,
         constructionNumber,
         comment,
       })
+
+      // 計画ピンからの撮影の場合、ピンを削除
+      const pinId = searchParams.get('pinId')
+      if (pinId) {
+        await supabase.from('planned_pins').delete().eq('id', pinId)
+      }
 
       const uploaded = { buildingName, poleLineName, poleNumber, constructionNumber }
       setLastData(uploaded)

@@ -50,7 +50,7 @@ function App() {
       />
       <Route
         path="/map"
-        element={session ? <MapPage /> : <Navigate to="/login" replace />}
+        element={session ? <MapPage session={session} /> : <Navigate to="/login" replace />}
       />
     </Routes>
   )
