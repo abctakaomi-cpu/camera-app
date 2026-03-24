@@ -135,10 +135,26 @@ function MapPage() {
           })
       })
 
-      const marker = new maplibregl.Marker()
+      const marker = new maplibregl.Marker({ draggable: true })
         .setLngLat([photo.longitude, photo.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
+
+      marker.on('dragend', async () => {
+        const lngLat = marker.getLngLat()
+        const { error: updateError } = await supabase
+          .from('photos')
+          .update({ latitude: lngLat.lat, longitude: lngLat.lng })
+          .eq('id', photo.id)
+
+        if (updateError) {
+          marker.setLngLat([photo.longitude, photo.latitude])
+          alert('座標の更新に失敗しました')
+        } else {
+          photo.latitude = lngLat.lat
+          photo.longitude = lngLat.lng
+        }
+      })
 
       markersRef.current.push(marker)
     })
