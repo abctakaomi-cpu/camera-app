@@ -14,7 +14,11 @@ function CapturePhotoPage({ session }) {
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [gpsBlocked, setGpsBlocked] = useState(false)
+  const [poleNumber, setPoleNumber] = useState('')
+  const [constructionNumber, setConstructionNumber] = useState('')
+  const [comment, setComment] = useState('')
   const fileInputRef = useRef(null)
+  const galleryInputRef = useRef(null)
 
   const { getPosition } = useGeolocation()
   const { compassDirection } = useCompass()
@@ -53,13 +57,20 @@ function CapturePhotoPage({ session }) {
         latitude: gps?.latitude || null,
         longitude: gps?.longitude || null,
         compassDirection: compassDirection || null,
+        poleNumber,
+        constructionNumber,
+        comment,
       })
 
       setStatus('アップロード完了')
       setFile(null)
       setPreview(null)
       setGps(null)
+      setPoleNumber('')
+      setConstructionNumber('')
+      setComment('')
       if (fileInputRef.current) fileInputRef.current.value = ''
+      if (galleryInputRef.current) galleryInputRef.current.value = ''
     } catch (err) {
       setError(err.message)
     } finally {
@@ -74,7 +85,40 @@ function CapturePhotoPage({ session }) {
       <div className="capture-content">
         <BuildingNameSelect value={buildingName} onChange={setBuildingName} />
 
-        <div className="capture-camera">
+        <div className="capture-fields">
+          <div className="capture-field">
+            <label htmlFor="pole-number">電柱番号</label>
+            <input
+              id="pole-number"
+              type="text"
+              value={poleNumber}
+              onChange={(e) => setPoleNumber(e.target.value)}
+              placeholder="電柱番号を入力"
+            />
+          </div>
+          <div className="capture-field">
+            <label htmlFor="construction-number">工事番号</label>
+            <input
+              id="construction-number"
+              type="text"
+              value={constructionNumber}
+              onChange={(e) => setConstructionNumber(e.target.value)}
+              placeholder="工事番号を入力"
+            />
+          </div>
+          <div className="capture-field">
+            <label htmlFor="comment">コメント</label>
+            <textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="コメント（任意）"
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <div className="capture-buttons">
           <input
             ref={fileInputRef}
             type="file"
@@ -88,7 +132,21 @@ function CapturePhotoPage({ session }) {
             className="camera-btn"
             onClick={() => fileInputRef.current?.click()}
           >
-            📷 写真を撮影
+            写真を撮影
+          </button>
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            id="gallery-input"
+            hidden
+          />
+          <button
+            className="gallery-btn"
+            onClick={() => galleryInputRef.current?.click()}
+          >
+            ギャラリーから選択
           </button>
         </div>
 

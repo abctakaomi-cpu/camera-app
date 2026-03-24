@@ -37,10 +37,19 @@ function PhotoCard({ photo }) {
         <span className="photo-card-date">
           {formatDate(photo.taken_at || photo.created_at)}
         </span>
+        {photo.pole_number && (
+          <span className="photo-card-pole">電柱: {photo.pole_number}</span>
+        )}
+        {photo.construction_number && (
+          <span className="photo-card-construction">工事: {photo.construction_number}</span>
+        )}
         {photo.latitude && photo.longitude && (
           <span className="photo-card-gps">
             {photo.latitude.toFixed(5)}, {photo.longitude.toFixed(5)}
           </span>
+        )}
+        {photo.comment && (
+          <span className="photo-card-comment">{photo.comment}</span>
         )}
       </div>
     </div>

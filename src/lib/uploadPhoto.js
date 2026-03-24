@@ -7,6 +7,9 @@ export async function uploadPhoto({
   latitude,
   longitude,
   compassDirection,
+  poleNumber,
+  constructionNumber,
+  comment,
 }) {
   // 1. Find or create project
   let { data: project } = await supabase
@@ -51,6 +54,9 @@ export async function uploadPhoto({
       latitude,
       longitude,
       compass_direction: compassDirection,
+      pole_number: poleNumber || null,
+      construction_number: constructionNumber || null,
+      comment: comment || null,
     })
     .select('*, projects(area)')
     .single()

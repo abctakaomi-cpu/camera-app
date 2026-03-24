@@ -295,23 +295,78 @@ button[type="submit"]:disabled {
   border-color: #1a73e8;
 }
 
-.capture-camera {
+.capture-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.capture-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.capture-field input,
+.capture-field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.capture-field input:focus,
+.capture-field textarea:focus {
+  outline: none;
+  border-color: #1a73e8;
+}
+
+.capture-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.capture-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .camera-btn {
   width: 100%;
-  padding: 24px;
-  font-size: 1.2rem;
+  padding: 20px;
+  font-size: 1.1rem;
   background: #1a73e8;
   color: #fff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .camera-btn:hover {
   background: #1557b0;
+}
+
+.gallery-btn {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.1rem;
+  background: #546e7a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.gallery-btn:hover {
+  background: #37474f;
 }
 
 .capture-preview {
@@ -370,8 +425,16 @@ button[type="submit"]:disabled {
   padding: 20px 16px;
 }
 
-.photolist-filter {
+.photolist-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 20px;
+}
+
+.photolist-filter {
+  flex: 1;
+  min-width: 150px;
 }
 
 .photolist-filter label {
@@ -381,14 +444,19 @@ button[type="submit"]:disabled {
   font-size: 0.95rem;
 }
 
-.photolist-filter select {
+.photolist-filter select,
+.photolist-filter input {
   width: 100%;
-  max-width: 300px;
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 1rem;
   background: #fff;
+}
+
+.photolist-filter input:focus {
+  outline: none;
+  border-color: #1a73e8;
 }
 
 .photo-grid {
@@ -433,9 +501,21 @@ button[type="submit"]:disabled {
   color: #666;
 }
 
+.photo-card-pole,
+.photo-card-construction {
+  font-size: 0.8rem;
+  color: #555;
+}
+
 .photo-card-gps {
   font-size: 0.75rem;
   color: #999;
+}
+
+.photo-card-comment {
+  font-size: 0.8rem;
+  color: #777;
+  font-style: italic;
 }
 
 .empty {
