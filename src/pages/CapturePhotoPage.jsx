@@ -18,9 +18,10 @@ function CapturePhotoPage({ session }) {
   const [status, setStatus] = useState('')
   const [allPhotos, setAllPhotos] = useState([])
 
+  const isIosChrome = /CriOS/.test(navigator.userAgent)
   const { compassDirection } = useCompass()
   const {
-    file, preview, gps, gpsBlocked, error, setError, gpsDebug,
+    file, preview, gps, gpsBlocked, error, setError,
     fileInputRef, galleryInputRef,
     handleFileChange, retryGps, reset,
   } = usePhotoCapture()
@@ -76,6 +77,12 @@ function CapturePhotoPage({ session }) {
       <Header title="写真撮影" />
 
       <div className="capture-content">
+        {isIosChrome && (
+          <div className="ios-chrome-warning">
+            iPhoneのChromeではGPS位置情報が正常に取得できません。<strong>Safariでのご利用を推奨します。</strong>
+          </div>
+        )}
+
         <BuildingNameSelect value={buildingName} onChange={setBuildingName} />
 
         <div className="capture-fields">
@@ -161,10 +168,6 @@ function CapturePhotoPage({ session }) {
           </div>
         )}
         {status && <div className="message">{status}</div>}
-
-        <div style={{ background: '#e3f2fd', padding: '8px 12px', borderRadius: '4px', fontSize: '0.8rem', color: '#1565c0', marginBottom: '12px' }}>
-          {gpsDebug}
-        </div>
 
         <button
           className="upload-btn"
