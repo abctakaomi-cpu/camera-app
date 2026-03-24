@@ -2,12 +2,13 @@ import { useCallback } from 'react'
 
 export function useGeolocation() {
   const getPosition = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('このブラウザでは位置情報を取得できません'))
-        return
-      }
+    if (!navigator.geolocation) {
+      return Promise.reject(new Error('このブラウザでは位置情報を取得できません'))
+    }
 
+    // iOS Chromeではgeolocation APIのtimeoutが機能しないことがあるため
+    // 手動タイムアウトをPromise.raceで実装
+    const geoPromise = new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           resolve({
@@ -33,10 +34,16 @@ export function useGeolocation() {
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0,
+          maximumAge: 60000,
         }
       )
     })
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('位置情報の取得がタイムアウトしました')), 15000)
+    })
+
+    return Promise.race([geoPromise, timeoutPromise])
   }, [])
 
   return { getPosition }
