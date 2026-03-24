@@ -135,21 +135,12 @@ function MapPage() {
           })
       })
 
-      const markerEl = document.createElement('div')
-      markerEl.className = 'custom-marker'
-      markerEl.innerHTML = `<div class="marker-pin"></div>`
-
-      const marker = new maplibregl.Marker({ element: markerEl, draggable: true, anchor: 'bottom' })
+      const marker = new maplibregl.Marker({ draggable: true })
         .setLngLat([photo.longitude, photo.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
 
-      marker.on('dragstart', () => {
-        markerEl.classList.add('dragging')
-      })
-
       marker.on('dragend', async () => {
-        markerEl.classList.remove('dragging')
         const lngLat = marker.getLngLat()
         const { error: updateError } = await supabase
           .from('photos')
