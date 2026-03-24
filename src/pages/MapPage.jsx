@@ -137,11 +137,7 @@ function MapPage() {
 
       const DRAG_OFFSET_PX = 60
 
-      const markerEl = document.createElement('div')
-      markerEl.className = 'custom-marker'
-      markerEl.innerHTML = '<div class="marker-pin"></div>'
-
-      const marker = new maplibregl.Marker({ element: markerEl, draggable: true, anchor: 'bottom' })
+      const marker = new maplibregl.Marker({ draggable: true })
         .setLngLat([photo.longitude, photo.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
@@ -150,20 +146,29 @@ function MapPage() {
       const originalLngLat = [photo.longitude, photo.latitude]
 
       marker.on('dragstart', () => {
-        // ゴーストマーカーを元の位置に表示
-        const ghostEl = document.createElement('div')
-        ghostEl.className = 'custom-marker ghost-marker'
-        ghostEl.innerHTML = '<div class="marker-pin"></div>'
-        ghostMarker = new maplibregl.Marker({ element: ghostEl, anchor: 'bottom' })
+        // ゴーストマーカーを元の位置に50%透過で表示
+        ghostMarker = new maplibregl.Marker({ color: '#1a73e8' })
           .setLngLat(originalLngLat)
           .addTo(mapRef.current)
+        ghostMarker.getElement().style.opacity = '0.5'
 
-        // ドラッグ中のピンを赤色+上方オフセット
-        markerEl.classList.add('dragging')
+        // ドラッグ中のピンを上方オフセット
+        const el = marker.getElement()
+        el.style.transform = el.style.transform + ' translateY(-60px)'
+      })
+
+      marker.on('drag', () => {
+        // ドラッグ中も継続的にオフセットを維持
+        const el = marker.getElement()
+        if (!el.style.transform.includes('translateY(-60px)')) {
+          el.style.transform = el.style.transform + ' translateY(-60px)'
+        }
       })
 
       marker.on('dragend', async () => {
-        markerEl.classList.remove('dragging')
+        // オフセット解除
+        const el = marker.getElement()
+        el.style.transform = el.style.transform.replace(' translateY(-60px)', '')
 
         // 指の位置から上方オフセット分を補正して、ピンの見た目位置の座標を算出
         const fingerLngLat = marker.getLngLat()
