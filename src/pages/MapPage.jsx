@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import Header from '../components/Header'
@@ -9,10 +9,59 @@ import { formatDate } from '../lib/formatDate'
 const JAPAN_CENTER = [137.0, 36.5]
 const DEFAULT_ZOOM = 5
 
+const MAP_STYLES = {
+  osm: {
+    label: 'OpenStreetMap',
+    style: {
+      version: 8,
+      sources: {
+        basemap: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        },
+      },
+      layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
+    },
+  },
+  gsi_standard: {
+    label: '国土地理院（標準）',
+    style: {
+      version: 8,
+      sources: {
+        basemap: {
+          type: 'raster',
+          tiles: ['https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
+        },
+      },
+      layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
+    },
+  },
+  gsi_photo: {
+    label: '国土地理院（航空写真）',
+    style: {
+      version: 8,
+      sources: {
+        basemap: {
+          type: 'raster',
+          tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
+          tileSize: 256,
+          attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
+        },
+      },
+      layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }],
+    },
+  },
+}
+
 function MapPage() {
   const mapContainer = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
+  const [mapStyle, setMapStyle] = useState('osm')
   const { photos, loading } = useRealtimePhotos(null)
 
   useEffect(() => {
@@ -20,24 +69,7 @@ function MapPage() {
 
     mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          },
-        },
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
-        ],
-      },
+      style: MAP_STYLES[mapStyle].style,
       center: JAPAN_CENTER,
       zoom: DEFAULT_ZOOM,
     })
@@ -51,6 +83,18 @@ function MapPage() {
       }
     }
   }, [])
+
+  // マップスタイル切り替え
+  useEffect(() => {
+    if (!mapRef.current) return
+    const center = mapRef.current.getCenter()
+    const zoom = mapRef.current.getZoom()
+    mapRef.current.setStyle(MAP_STYLES[mapStyle].style)
+    mapRef.current.once('styledata', () => {
+      mapRef.current.setCenter(center)
+      mapRef.current.setZoom(zoom)
+    })
+  }, [mapStyle])
 
   useEffect(() => {
     if (!mapRef.current || loading) return
@@ -115,6 +159,17 @@ function MapPage() {
   return (
     <div className="map-page">
       <Header title="マップ" />
+      <div className="map-style-switcher">
+        {Object.entries(MAP_STYLES).map(([key, { label }]) => (
+          <button
+            key={key}
+            className={`map-style-btn ${mapStyle === key ? 'active' : ''}`}
+            onClick={() => setMapStyle(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div ref={mapContainer} className="map-container" />
     </div>
   )
