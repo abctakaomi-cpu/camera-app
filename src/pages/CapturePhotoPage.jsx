@@ -59,8 +59,10 @@ function CapturePhotoPage({ session }) {
     fetchData()
   }, [session.user.id])
 
+  const fromPin = !!searchParams.get('pinId')
+
   const handleUpload = async () => {
-    if (!file || !buildingName) return
+    if (!file || (!buildingName && !fromPin)) return
 
     setUploading(true)
     setError('')
@@ -223,7 +225,7 @@ function CapturePhotoPage({ session }) {
         <button
           className="upload-btn"
           onClick={handleUpload}
-          disabled={!file || !buildingName || uploading}
+          disabled={!file || (!buildingName && !fromPin) || uploading}
         >
           {uploading ? 'アップロード中...' : 'アップロード'}
         </button>
