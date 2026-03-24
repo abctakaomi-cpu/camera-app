@@ -13,7 +13,10 @@ function PhotoListPage() {
   const { photos, loading, error } = useRealtimePhotos(buildingFilter || null)
 
   const filteredPhotos = photos.filter((p) => {
-    if (poleFilter && !p.pole_number?.includes(poleFilter)) return false
+    if (poleFilter) {
+      const poleText = [p.pole_line_name, p.pole_number].filter(Boolean).join(' ')
+      if (!poleText.includes(poleFilter)) return false
+    }
     if (constructionFilter && !p.construction_number?.includes(constructionFilter)) return false
     return true
   })

@@ -330,6 +330,15 @@ button[type="submit"]:disabled {
   min-height: 60px;
 }
 
+.pole-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.pole-inputs input {
+  flex: 1;
+}
+
 .capture-buttons {
   display: flex;
   flex-direction: column;

@@ -37,8 +37,8 @@ function PhotoCard({ photo }) {
         <span className="photo-card-date">
           {formatDate(photo.taken_at || photo.created_at)}
         </span>
-        {photo.pole_number && (
-          <span className="photo-card-pole">電柱: {photo.pole_number}</span>
+        {(photo.pole_line_name || photo.pole_number) && (
+          <span className="photo-card-pole">電柱: {[photo.pole_line_name, photo.pole_number].filter(Boolean).join(' ')}</span>
         )}
         {photo.construction_number && (
           <span className="photo-card-construction">工事: {photo.construction_number}</span>

@@ -14,6 +14,7 @@ function CapturePhotoPage({ session }) {
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [gpsBlocked, setGpsBlocked] = useState(false)
+  const [poleLineName, setPoleLineName] = useState('')
   const [poleNumber, setPoleNumber] = useState('')
   const [constructionNumber, setConstructionNumber] = useState('')
   const [comment, setComment] = useState('')
@@ -57,6 +58,7 @@ function CapturePhotoPage({ session }) {
         latitude: gps?.latitude || null,
         longitude: gps?.longitude || null,
         compassDirection: compassDirection || null,
+        poleLineName,
         poleNumber,
         constructionNumber,
         comment,
@@ -66,6 +68,7 @@ function CapturePhotoPage({ session }) {
       setFile(null)
       setPreview(null)
       setGps(null)
+      setPoleLineName('')
       setPoleNumber('')
       setConstructionNumber('')
       setComment('')
@@ -87,14 +90,23 @@ function CapturePhotoPage({ session }) {
 
         <div className="capture-fields">
           <div className="capture-field">
-            <label htmlFor="pole-number">電柱番号</label>
-            <input
-              id="pole-number"
-              type="text"
-              value={poleNumber}
-              onChange={(e) => setPoleNumber(e.target.value)}
-              placeholder="電柱番号を入力"
-            />
+            <label>電柱番号</label>
+            <div className="pole-inputs">
+              <input
+                id="pole-line-name"
+                type="text"
+                value={poleLineName}
+                onChange={(e) => setPoleLineName(e.target.value)}
+                placeholder="幹線名"
+              />
+              <input
+                id="pole-number"
+                type="text"
+                value={poleNumber}
+                onChange={(e) => setPoleNumber(e.target.value)}
+                placeholder="番号"
+              />
+            </div>
           </div>
           <div className="capture-field">
             <label htmlFor="construction-number">工事番号</label>
