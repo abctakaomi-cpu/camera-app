@@ -11,6 +11,7 @@ function PhotoListPage() {
   const [poleNumberFilter, setPoleNumberFilter] = useState('')
   const [constructionFilter, setConstructionFilter] = useState('')
   const [buildings, setBuildings] = useState([])
+  const [suggestions, setSuggestions] = useState({ poleLineNames: [], poleNumbers: [], constructionNumbers: [] })
   const { photos, loading, error } = useRealtimePhotos(buildingFilter || null)
 
   const filteredPhotos = photos.filter((p) => {
@@ -21,19 +22,30 @@ function PhotoListPage() {
   })
 
   useEffect(() => {
-    const fetchBuildings = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      const { data: projects } = await supabase
         .from('projects')
         .select('area')
         .not('area', 'is', null)
         .order('area')
 
-      if (data) {
-        const unique = [...new Set(data.map((d) => d.area).filter(Boolean))]
-        setBuildings(unique)
+      if (projects) {
+        setBuildings([...new Set(projects.map((d) => d.area).filter(Boolean))])
+      }
+
+      const { data: photoData } = await supabase
+        .from('photos')
+        .select('pole_line_name, pole_number, construction_number')
+
+      if (photoData) {
+        setSuggestions({
+          poleLineNames: [...new Set(photoData.map((d) => d.pole_line_name).filter(Boolean))].sort(),
+          poleNumbers: [...new Set(photoData.map((d) => d.pole_number).filter(Boolean))].sort(),
+          constructionNumbers: [...new Set(photoData.map((d) => d.construction_number).filter(Boolean))].sort(),
+        })
       }
     }
-    fetchBuildings()
+    fetchData()
   }, [])
 
   return (
@@ -63,17 +75,25 @@ function PhotoListPage() {
               <input
                 id="filter-pole-line"
                 type="text"
+                list="filter-pole-line-names"
                 value={poleLineFilter}
                 onChange={(e) => setPoleLineFilter(e.target.value)}
                 placeholder="幹線名"
               />
+              <datalist id="filter-pole-line-names">
+                {suggestions.poleLineNames.map((v) => <option key={v} value={v} />)}
+              </datalist>
               <input
                 id="filter-pole-number"
                 type="text"
+                list="filter-pole-numbers"
                 value={poleNumberFilter}
                 onChange={(e) => setPoleNumberFilter(e.target.value)}
                 placeholder="番号"
               />
+              <datalist id="filter-pole-numbers">
+                {suggestions.poleNumbers.map((v) => <option key={v} value={v} />)}
+              </datalist>
             </div>
           </div>
           <div className="photolist-filter">
@@ -81,10 +101,14 @@ function PhotoListPage() {
             <input
               id="filter-construction"
               type="text"
+              list="filter-construction-numbers"
               value={constructionFilter}
               onChange={(e) => setConstructionFilter(e.target.value)}
               placeholder="工事番号で絞り込み"
             />
+            <datalist id="filter-construction-numbers">
+              {suggestions.constructionNumbers.map((v) => <option key={v} value={v} />)}
+            </datalist>
           </div>
         </div>
 
