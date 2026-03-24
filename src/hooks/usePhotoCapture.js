@@ -13,7 +13,7 @@ export function usePhotoCapture() {
 
   const { getPosition } = useGeolocation()
 
-  const handleFileChange = async (e, source = 'camera') => {
+  const handleFileChange = async (e) => {
     const selected = e.target.files?.[0]
     if (!selected) return
 
@@ -21,13 +21,11 @@ export function usePhotoCapture() {
     setPreview(URL.createObjectURL(selected))
     setError('')
 
-    if (source === 'gallery') {
-      const exifGps = await extractExifGps(selected)
-      if (exifGps) {
-        setGps(exifGps)
-        setGpsBlocked(false)
-        return
-      }
+    const exifGps = await extractExifGps(selected)
+    if (exifGps) {
+      setGps(exifGps)
+      setGpsBlocked(false)
+      return
     }
 
     try {

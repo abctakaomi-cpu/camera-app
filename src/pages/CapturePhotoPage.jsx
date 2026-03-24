@@ -106,7 +106,7 @@ function CapturePhotoPage({ session }) {
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={(e) => handleFileChange(e, 'camera')}
+            onChange={handleFileChange}
             id="camera-input"
             hidden
           />
@@ -120,7 +120,7 @@ function CapturePhotoPage({ session }) {
             ref={galleryInputRef}
             type="file"
             accept="image/*"
-            onChange={(e) => handleFileChange(e, 'gallery')}
+            onChange={handleFileChange}
             id="gallery-input"
             hidden
           />
