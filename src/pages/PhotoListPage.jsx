@@ -4,7 +4,6 @@ import PhotoCard from '../components/PhotoCard'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
 import { supabase } from '../lib/supabase'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 
 function PhotoListPage() {
   const [buildingFilter, setBuildingFilter] = useState('')
@@ -60,7 +59,6 @@ function PhotoListPage() {
               <PhotoCard
                 key={photo.id}
                 photo={photo}
-                storageUrl={supabaseUrl}
               />
             ))}
           </div>

@@ -1,5 +1,17 @@
-function PhotoCard({ photo, storageUrl }) {
-  const imageUrl = `${storageUrl}/storage/v1/object/public/photos/${photo.storage_path}`
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+
+function PhotoCard({ photo }) {
+  const [imageUrl, setImageUrl] = useState(null)
+
+  useEffect(() => {
+    supabase.storage
+      .from('photos')
+      .createSignedUrl(photo.storage_path, 3600)
+      .then(({ data }) => {
+        if (data?.signedUrl) setImageUrl(data.signedUrl)
+      })
+  }, [photo.storage_path])
 
   const formatDate = (dateStr) => {
     if (!dateStr) return ''
