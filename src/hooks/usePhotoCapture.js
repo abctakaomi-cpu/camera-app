@@ -14,12 +14,38 @@ export function usePhotoCapture() {
 
   const { getPosition } = useGeolocation()
 
-  // ページ読み込み時にGPSを先行取得（カメラ復帰後のフォールバック用）
+  // ページ読み込み時にGPSを3秒間受信し、最も精度の高い位置を先行取得
   useEffect(() => {
-    getPosition()
-      .then((pos) => { preloadedGps.current = pos })
-      .catch(() => { preloadedGps.current = null })
-  }, [getPosition])
+    if (!navigator.geolocation) return
+
+    let bestPosition = null
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (!bestPosition || position.coords.accuracy < bestPosition.accuracy) {
+          bestPosition = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          }
+          preloadedGps.current = {
+            latitude: bestPosition.latitude,
+            longitude: bestPosition.longitude,
+          }
+        }
+      },
+      () => {},
+      { enableHighAccuracy: false, maximumAge: 0 }
+    )
+
+    const timer = setTimeout(() => {
+      navigator.geolocation.clearWatch(watchId)
+    }, 3000)
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId)
+      clearTimeout(timer)
+    }
+  }, [])
 
   const handleFileChange = async (e) => {
     const selected = e.target.files?.[0]
