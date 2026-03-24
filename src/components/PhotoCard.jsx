@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatDate } from '../lib/formatDate'
 
 function PhotoCard({ photo }) {
   const [imageUrl, setImageUrl] = useState(null)
@@ -12,18 +13,6 @@ function PhotoCard({ photo }) {
         if (data?.signedUrl) setImageUrl(data.signedUrl)
       })
   }, [photo.storage_path])
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    const d = new Date(dateStr)
-    return d.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
 
   return (
     <div className="photo-card">

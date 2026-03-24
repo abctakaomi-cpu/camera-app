@@ -5,6 +5,7 @@ import PoleFilterInputs from '../components/PoleFilterInputs'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
 import { useBuildings } from '../hooks/useBuildings'
 import { useSuggestions } from '../hooks/useSuggestions'
+import { matchesFilters } from '../lib/filterPhotos'
 
 function PhotoListPage() {
   const [buildingFilter, setBuildingFilter] = useState('')
@@ -20,12 +21,13 @@ function PhotoListPage() {
     constructionNumber: constructionFilter,
   })
 
-  const filteredPhotos = photos.filter((p) => {
-    if (poleLineFilter && !p.pole_line_name?.includes(poleLineFilter)) return false
-    if (poleNumberFilter && !p.pole_number?.includes(poleNumberFilter)) return false
-    if (constructionFilter && !p.construction_number?.includes(constructionFilter)) return false
-    return true
-  })
+  const filteredPhotos = photos.filter((p) =>
+    matchesFilters(p, {
+      poleLineName: poleLineFilter,
+      poleNumber: poleNumberFilter,
+      constructionNumber: constructionFilter,
+    })
+  )
 
   return (
     <div className="photolist-page">

@@ -4,21 +4,10 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import Header from '../components/Header'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
 import { supabase } from '../lib/supabase'
+import { formatDate } from '../lib/formatDate'
 
 const JAPAN_CENTER = [137.0, 36.5]
 const DEFAULT_ZOOM = 5
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 function MapPage() {
   const mapContainer = useRef(null)
