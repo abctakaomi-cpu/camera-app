@@ -151,7 +151,7 @@ function MapPage({ session }) {
         <div class="map-popup-info">
           <div class="map-popup-title">
             ${photo.projects?.area ? `<strong>${photo.projects.area}</strong>` : ''}
-            <a class="streetview-link" target="_blank" rel="noopener" title="Googleストリートビューで開く">
+            <a class="streetview-link" href="#" title="Googleストリートビューで開く">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#EA4335"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
             </a>
           </div>
@@ -162,13 +162,19 @@ function MapPage({ session }) {
 
       popup.setDOMContent(popupContent)
 
-      popup.on('open', () => {
-        // ポップアップを開くたびに最新の座標でストリートビューURLを更新
-        const svLink = popupContent.querySelector('.streetview-link')
-        if (svLink) {
-          svLink.href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${photo.latitude},${photo.longitude}`
-        }
+      // ストリートビューリンクをタップ時に最新座標で遷移
+      const svLink = popupContent.querySelector('.streetview-link')
+      if (svLink) {
+        svLink.addEventListener('click', (e) => {
+          e.preventDefault()
+          window.open(
+            `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${photo.latitude},${photo.longitude}`,
+            '_blank'
+          )
+        })
+      }
 
+      popup.on('open', () => {
         supabase.storage
           .from('photos')
           .createSignedUrl(photo.storage_path, 3600)
