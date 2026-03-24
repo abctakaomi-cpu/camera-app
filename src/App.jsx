@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
 import CapturePhotoPage from './pages/CapturePhotoPage'
 import PhotoListPage from './pages/PhotoListPage'
+import MapPage from './pages/MapPage'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -46,6 +47,10 @@ function App() {
       <Route
         path="/photos"
         element={session ? <PhotoListPage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/map"
+        element={session ? <MapPage /> : <Navigate to="/login" replace />}
       />
     </Routes>
   )

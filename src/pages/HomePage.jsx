@@ -20,6 +20,9 @@ function HomePage({ session }) {
         <button className="nav-btn secondary" onClick={() => navigate('/photos')}>
           🖼 写真一覧
         </button>
+        <button className="nav-btn secondary" onClick={() => navigate('/map')}>
+          🗺 マップ
+        </button>
       </div>
 
       <div className="home-logout">

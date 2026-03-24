@@ -534,6 +534,50 @@ button[type="submit"]:disabled {
   font-size: 1.1rem;
 }
 
+/* Map page */
+.map-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.map-container {
+  flex: 1;
+}
+
+.map-popup {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+}
+
+.map-popup-loading {
+  color: #999;
+  font-size: 0.8rem;
+  padding: 4px 0;
+}
+
+.map-popup-img {
+  width: 200px;
+  border-radius: 4px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.map-popup-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.map-popup-info strong {
+  color: #1a73e8;
+}
+
+.map-popup-info span {
+  color: #666;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 600px) {
   .photo-grid {
     grid-template-columns: repeat(2, 1fr);
