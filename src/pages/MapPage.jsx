@@ -65,6 +65,7 @@ function MapPage({ session }) {
   const markersRef = useRef([])
   const plannedMarkersRef = useRef([])
   const [mapStyle, setMapStyle] = useState('osm')
+  const [editMode, setEditMode] = useState(false)
   const [pinMode, setPinMode] = useState(false)
   const [pendingLngLat, setPendingLngLat] = useState(null)
   const [pinForm, setPinForm] = useState({ buildingName: '', poleLineName: '', poleNumber: '', constructionNumber: '' })
@@ -119,6 +120,12 @@ function MapPage({ session }) {
       if (mapRef.current) mapRef.current.off('click', handleClick)
     }
   }, [pinMode])
+
+  // 編集モード切り替え時にマーカーのdraggableを更新
+  useEffect(() => {
+    markersRef.current.forEach((m) => m.setDraggable(editMode))
+    plannedMarkersRef.current.forEach((m) => m.setDraggable(editMode))
+  }, [editMode])
 
   // マップスタイル切り替え
   useEffect(() => {
@@ -190,7 +197,7 @@ function MapPage({ session }) {
 
       const DRAG_OFFSET_PX = 60
 
-      const marker = new maplibregl.Marker({ draggable: true })
+      const marker = new maplibregl.Marker({ draggable: false })
         .setLngLat([photo.longitude, photo.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
@@ -316,7 +323,7 @@ function MapPage({ session }) {
 
       const DRAG_OFFSET_PX = 60
 
-      const marker = new maplibregl.Marker({ color: '#FF9800', draggable: true })
+      const marker = new maplibregl.Marker({ color: '#FF9800', draggable: false })
         .setLngLat([pin.longitude, pin.latitude])
         .setPopup(popup)
         .addTo(mapRef.current)
@@ -413,16 +420,28 @@ function MapPage({ session }) {
       </div>
       <div ref={mapContainer} className="map-container" />
 
-      {/* ピン追加ボタン */}
-      <button
-        className={`pin-add-btn ${pinMode ? 'active' : ''}`}
-        onClick={() => {
-          setPinMode(!pinMode)
-          setPendingLngLat(null)
-        }}
-      >
-        {pinMode ? 'キャンセル' : 'ピン追加'}
-      </button>
+      {/* マップ操作ボタン */}
+      <div className="map-action-buttons">
+        <button
+          className={`map-action-btn ${editMode ? 'active' : ''}`}
+          onClick={() => {
+            setEditMode(!editMode)
+            if (pinMode) { setPinMode(false); setPendingLngLat(null) }
+          }}
+        >
+          {editMode ? 'ピン移動OFF' : 'ピン移動'}
+        </button>
+        <button
+          className={`map-action-btn pin-add ${pinMode ? 'active' : ''}`}
+          onClick={() => {
+            setPinMode(!pinMode)
+            setPendingLngLat(null)
+            if (editMode) setEditMode(false)
+          }}
+        >
+          {pinMode ? 'キャンセル' : 'ピン追加'}
+        </button>
+      </div>
 
       {/* ピン追加モードの案内 */}
       {pinMode && !pendingLngLat && (

@@ -676,25 +676,45 @@ button[type="submit"]:disabled {
   cursor: pointer;
 }
 
-.pin-add-btn {
+.map-action-buttons {
   position: absolute;
   bottom: 24px;
   right: 16px;
-  padding: 12px 20px;
-  background: #FF9800;
-  color: #fff;
-  border: none;
-  border-radius: 24px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   z-index: 10;
 }
 
-.pin-add-btn.active {
+.map-action-btn {
+  padding: 10px 16px;
+  background: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.map-action-btn.active {
+  background: #1a73e8;
+  color: #fff;
+  border-color: #1a73e8;
+}
+
+.map-action-btn.pin-add {
+  background: #FF9800;
+  color: #fff;
+  border-color: #FF9800;
+}
+
+.map-action-btn.pin-add.active {
   background: #e0e0e0;
   color: #333;
+  border-color: #ccc;
 }
 
 .pin-mode-hint {
