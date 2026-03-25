@@ -4,6 +4,7 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import Header from '../components/Header'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
+import { useCompass } from '../hooks/useCompass'
 import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/formatDate'
 
@@ -64,7 +65,11 @@ function MapPage({ session }) {
   const mapRef = useRef(null)
   const markersRef = useRef([])
   const plannedMarkersRef = useRef([])
+  const userMarkerRef = useRef(null)
+  const watchIdRef = useRef(null)
+  const initialFlyDone = useRef(false)
   const [mapStyle, setMapStyle] = useState('osm')
+  const { compassDirection } = useCompass()
   const [editMode, setEditMode] = useState(false)
   const [pinMode, setPinMode] = useState(false)
   const [pendingLngLat, setPendingLngLat] = useState(null)
@@ -98,13 +103,55 @@ function MapPage({ session }) {
 
     mapRef.current.addControl(new maplibregl.NavigationControl(), 'top-right')
 
+    // 現在位置の追従を開始
+    if (navigator.geolocation) {
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          const lngLat = [pos.coords.longitude, pos.coords.latitude]
+
+          if (!userMarkerRef.current) {
+            // ユーザーマーカー作成（矢印アイコン）
+            const el = document.createElement('div')
+            el.className = 'user-location-marker'
+            el.innerHTML = '<div class="user-arrow"></div>'
+            userMarkerRef.current = new maplibregl.Marker({ element: el })
+              .setLngLat(lngLat)
+              .addTo(mapRef.current)
+          } else {
+            userMarkerRef.current.setLngLat(lngLat)
+          }
+
+          // 初回のみ現在位置にズーム
+          if (!initialFlyDone.current && mapRef.current) {
+            mapRef.current.flyTo({ center: lngLat, zoom: 18 })
+            initialFlyDone.current = true
+          }
+        },
+        () => {},
+        { enableHighAccuracy: false, maximumAge: 5000 }
+      )
+    }
+
     return () => {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+      }
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
       }
     }
   }, [])
+
+  // コンパス方向でユーザーマーカーの矢印を回転
+  useEffect(() => {
+    if (userMarkerRef.current && compassDirection != null) {
+      const arrow = userMarkerRef.current.getElement().querySelector('.user-arrow')
+      if (arrow) {
+        arrow.style.transform = `rotate(${compassDirection}deg)`
+      }
+    }
+  }, [compassDirection])
 
   // ピン追加モードのクリックハンドラ
   useEffect(() => {
