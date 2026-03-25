@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/formatDate'
 
@@ -76,6 +76,62 @@ function EditableComment({ value, onSave }) {
 }
 
 function PhotoPreviewModal({ photo, imageUrl, onClose, onUpdate }) {
+  const [scale, setScale] = useState(1)
+  const [translate, setTranslate] = useState({ x: 0, y: 0 })
+  const imgRef = useRef(null)
+  const pinchRef = useRef({ startDist: 0, startScale: 1 })
+  const panRef = useRef({ startX: 0, startY: 0, startTx: 0, startTy: 0 })
+
+  const getDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault()
+      pinchRef.current = { startDist: getDistance(e.touches), startScale: scale }
+    } else if (e.touches.length === 1 && scale > 1) {
+      panRef.current = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        startTx: translate.x,
+        startTy: translate.y,
+      }
+    }
+  }, [scale, translate])
+
+  const handleTouchMove = useCallback((e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault()
+      const dist = getDistance(e.touches)
+      const newScale = Math.max(1, Math.min(5, pinchRef.current.startScale * (dist / pinchRef.current.startDist)))
+      setScale(newScale)
+      if (newScale <= 1) setTranslate({ x: 0, y: 0 })
+    } else if (e.touches.length === 1 && scale > 1) {
+      const dx = e.touches[0].clientX - panRef.current.startX
+      const dy = e.touches[0].clientY - panRef.current.startY
+      setTranslate({ x: panRef.current.startTx + dx, y: panRef.current.startTy + dy })
+    }
+  }, [scale])
+
+  const handleTouchEnd = useCallback(() => {
+    if (scale <= 1) {
+      setScale(1)
+      setTranslate({ x: 0, y: 0 })
+    }
+  }, [scale])
+
+  const handleDoubleClick = useCallback(() => {
+    if (scale > 1) {
+      setScale(1)
+      setTranslate({ x: 0, y: 0 })
+    } else {
+      setScale(2.5)
+    }
+  }, [scale])
+
   const handleFieldUpdate = async (field, value) => {
     const { error } = await supabase
       .from('photos')
@@ -123,8 +179,20 @@ function PhotoPreviewModal({ photo, imageUrl, onClose, onUpdate }) {
       <div className="preview-modal">
         <button className="preview-close" onClick={onClose}>✕</button>
 
-        <div className="preview-image">
-          <img src={imageUrl} alt={photo.file_name || '写真'} />
+        <div
+          className="preview-image"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onDoubleClick={handleDoubleClick}
+        >
+          <img
+            ref={imgRef}
+            src={imageUrl}
+            alt={photo.file_name || '写真'}
+            style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
+            draggable={false}
+          />
         </div>
 
         <div className="preview-info">
