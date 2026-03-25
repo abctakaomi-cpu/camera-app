@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Header from '../components/Header'
 import PhotoCard from '../components/PhotoCard'
+import PhotoPreviewModal from '../components/PhotoPreviewModal'
 import PoleFilterInputs from '../components/PoleFilterInputs'
 import { useRealtimePhotos } from '../hooks/useRealtimePhotos'
 import { useBuildings } from '../hooks/useBuildings'
@@ -12,6 +13,8 @@ function PhotoListPage() {
   const [poleLineFilter, setPoleLineFilter] = useState('')
   const [poleNumberFilter, setPoleNumberFilter] = useState('')
   const [constructionFilter, setConstructionFilter] = useState('')
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null)
   const buildings = useBuildings()
   const { photos, loading, error } = useRealtimePhotos(buildingFilter || null)
 
@@ -28,6 +31,23 @@ function PhotoListPage() {
       constructionNumber: constructionFilter,
     })
   )
+
+  const handlePhotoClick = (photo, imageUrl) => {
+    setSelectedPhoto(photo)
+    setSelectedImageUrl(imageUrl)
+  }
+
+  const handleUpdate = (photoId, updates) => {
+    // ローカルのphotoオブジェクトを更新
+    const photo = photos.find((p) => p.id === photoId)
+    if (photo) {
+      Object.assign(photo, updates)
+    }
+    // モーダルのphotoも更新
+    if (selectedPhoto?.id === photoId) {
+      setSelectedPhoto({ ...selectedPhoto, ...updates })
+    }
+  }
 
   return (
     <div className="photolist-page">
@@ -71,11 +91,20 @@ function PhotoListPage() {
         ) : (
           <div className="photo-grid">
             {filteredPhotos.map((photo) => (
-              <PhotoCard key={photo.id} photo={photo} />
+              <PhotoCard key={photo.id} photo={photo} onClick={handlePhotoClick} />
             ))}
           </div>
         )}
       </div>
+
+      {selectedPhoto && (
+        <PhotoPreviewModal
+          photo={selectedPhoto}
+          imageUrl={selectedImageUrl}
+          onClose={() => setSelectedPhoto(null)}
+          onUpdate={handleUpdate}
+        />
+      )}
     </div>
   )
 }

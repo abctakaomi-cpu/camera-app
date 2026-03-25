@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/formatDate'
 
-function PhotoCard({ photo }) {
+function PhotoCard({ photo, onClick }) {
   const [imageUrl, setImageUrl] = useState(null)
 
   useEffect(() => {
@@ -15,7 +15,7 @@ function PhotoCard({ photo }) {
   }, [photo.storage_path])
 
   return (
-    <div className="photo-card">
+    <div className="photo-card" onClick={() => onClick && onClick(photo, imageUrl)}>
       <div className="photo-card-image">
         <img src={imageUrl} alt={photo.file_name || '写真'} loading="lazy" />
       </div>
