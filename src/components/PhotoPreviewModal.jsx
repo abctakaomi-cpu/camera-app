@@ -119,8 +119,8 @@ function PhotoPreviewModal({ photo, imageUrl, onClose, onUpdate }) {
   }
 
   return (
-    <div className="preview-overlay" onClick={onClose}>
-      <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="preview-overlay">
+      <div className="preview-modal">
         <button className="preview-close" onClick={onClose}>✕</button>
 
         <div className="preview-image">
